@@ -197,7 +197,7 @@ single_idx <- race_count == 1   # Exactly one race
 df_crani$race[idx_minority[single_idx]] <- race_cols[max.col(race_mat[single_idx, ], ties.method = "first")]
 df_crani$race[idx_minority[race_count > 1]] <- "multiple"   # Multiple races
 
-#Make pupillometry column
+#Make pupillometry column binary #QUONK this is the only edit I would be concerned about in this file
 df_crani$pupils <- NA_character_
 df_crani$pupils[df_crani$tbipupillaryresponse == 3] <-"ABPR"
 df_crani$pupils[df_crani$tbipupillaryresponse<3]<-"PPR"
