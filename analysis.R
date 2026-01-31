@@ -30,7 +30,7 @@ df <- raw_df
 
 transform_analysis_vars <- function(df) {
   
-  # Safety check
+  # Safety check QUONK just added pupils and tbipupillary response
   required_cols <- c(
     "ageyears", "iss", "minority", "sex", "teachingstatus", "verificationlevel",
     "trach", "gastro", "icpparench", "icpevdrain",
@@ -141,17 +141,12 @@ transform_analysis_vars <- function(df) {
         tbimidlineshift == 2 ~ "No",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("Yes", "No")),
-      tbipupillaryresponse = case_when(
+      tbipupillaryresponse = case_when( #QUONK
         tbipupillaryresponse == 1 ~ "Both reactive",
         tbipupillaryresponse == 2 ~ "One reactive",
         tbipupillaryresponse == 3 ~ "Neither reactive",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("Both reactive", "One reactive", "Neither reactive")),
-      pupils = factor(
-        pupils,
-        levels = c("PPR", "ABPR"),
-        labels = c("At least one reactive", "Absent bilateral pupillary response")
-      ),
       gcs_cat = case_when(
         !is.na(totalgcs) & totalgcs <= 8  ~ "Severe",
         !is.na(totalgcs) & totalgcs <= 12 ~ "Moderate",
@@ -257,8 +252,8 @@ data <- raw_df
 apply_analytic_filters <- function(data_frame) {
   data_frame %>%
     filter(!is.na(minority))%>%
-    filter(!is.na(pupils))%>%
-    filter(!is.na(tbipupillaryresponse), tbipupillaryresponse %in% c(1,2,3)) %>%
+    filter(!is.na(pupils))%>% #QUONK
+    filter(!is.na(tbipupillaryresponse), tbipupillaryresponse %in% c(1,2,3)) %>% #QUONK
     filter(!is.na(sex), sex %in% c(1,2))%>%
     filter(!is.na(teachingstatus))%>%
     filter(!is.na(verificationlevel))%>%
@@ -278,7 +273,7 @@ filter_log <- log_step(data_analytic, "Filtered (removed missing/bad values)", f
 
 ######## Run statistical analysis to compare groups ########
 
-group_var <- "pupils"
+group_var <- "pupils" #QUONK
 
 exclude_vars <- character(0)
 
@@ -359,7 +354,7 @@ write.csv(table1_pvals, file.path(output_dir, "raw_data_statistics.csv"), row.na
 
 ######## Run more detailed statistical analyses ############
 
-group_var <- "pupils"
+group_var <- "pupils" #QUONK
 exclude_vars <- character(0)
 
 # ---- settings ----
@@ -551,7 +546,7 @@ data_analytic <- data_analytic %>%
     minority         = as.integer(minority),             # 1 = minority, 0 = NHW
     verificationlevel = factor(verificationlevel),
     teachingstatus   = factor(teachingstatus),
-    pupils = factor(
+    pupils = factor( #QUONK
       pupils,
       levels = c("PPR", "ABPR"),
       labels = c("At least one reactive", "Absent bilateral pupillary response")
@@ -579,15 +574,18 @@ data_analytic <- data_analytic %>%
 
 ######## Propensity matching ########
 
-
+#QUONK
 ps_formula <- pupils ~ ageyears + sex + iss +
   tbimidlineshift + ich_category +
   teachingstatus + verificationlevel +
   statedesignation + minority
 
-
-data_ps <- transform_analysis_vars(data_analytic)
-
+#QUONK
+#data_ps <- transform_analysis_vars(data_analytic)
+data_ps <- transform_analysis_vars(data_analytic)%>%
+  filter(!is.na(pupils)) %>%
+  droplevels()
+    
 m.out <- matchit(
   ps_formula,
   data = data_ps,
@@ -606,7 +604,7 @@ covar_labels <- c(
   distance = "Propensity score",
   ageyears = "Age (years)",
   sex_Female = "Sex",
-  minority = "Minority status",
+  minority = "Minority status", #QUONK
   gcs_cat_Mild = "GCS: Mild (13–15)",
   gcs_cat_Moderate = "GCS: Moderate (9–12)",
   gcs_cat_Severe = "GCS: Severe (3-8)",
@@ -684,7 +682,7 @@ matched_summary_df <- make_summary_df(matched, max_levels_to_print = 10)
 write.csv(matched_summary_df[order(matched_summary_df$type, decreasing=TRUE),],
           file.path(output_dir, "matched_data_summary.csv"), row.names=FALSE)
 
-group_var <- "minority"
+group_var <- "pupils" #QUONK haven't started running from here; just changed minority to pupils from here until the last QUONK
 
 exclude_vars <- c(
   "distance", "weights", "subclass"  # MatchIt columns
@@ -839,26 +837,26 @@ run_rr_cluster <- function(formula, data, cluster) {
 
 parench_out_rr <- run_rr_cluster(icpparench ~ minority, matched, matched$subclass)
 evd_out_rr     <- run_rr_cluster(icpevdrain ~ minority, matched, matched$subclass)
-trach_out_rr   <- run_rr_cluster(trach ~ minority, matched, matched$subclass)
-gastro_out_rr  <- run_rr_cluster(gastro ~ minority, matched, matched$subclass)
+trach_out_rr   <- run_rr_cluster(trach ~ pupils, matched, matched$subclass)
+gastro_out_rr  <- run_rr_cluster(gastro ~ pupils, matched, matched$subclass)
 
 
 mort_out_rr <- run_rr_cluster(
-  mort_inhospital ~ minority,
+  mort_inhospital ~ pupils,
   matched_mort,
   matched_mort$subclass
 )
 mort_out_rr
 
 ltc_out_rr <- run_rr_cluster(
-  ltc_inhospital ~ minority,
+  ltc_inhospital ~ pupils,
   matched_ltc,
   matched_ltc$subclass
 )
 ltc_out_rr
 
 wlt_out_rr <- run_rr_cluster(
-  withdrawallst_bin ~ minority,
+  withdrawallst_bin ~ pupils,
   matched_wlt,
   matched_wlt$subclass
 )
@@ -877,32 +875,32 @@ run_logit_cluster <- function(formula, data, cluster) {
 
 #crani_out <- run_logit_cluster(crani ~ minority, matched, matched$subclass)
 #crani_out
-parench_out <- run_logit_cluster(icpparench ~ minority, matched, matched$subclass)
+parench_out <- run_logit_cluster(icpparench ~ pupils, matched, matched$subclass)
 parench_out
-evd_out      <- run_logit_cluster(icpevdrain ~ minority, matched, matched$subclass)
+evd_out      <- run_logit_cluster(icpevdrain ~ pupils, matched, matched$subclass)
 evd_out
-trach_out <- run_logit_cluster(trach ~ minority, matched, matched$subclass)
+trach_out <- run_logit_cluster(trach ~ pupils, matched, matched$subclass)
 trach_out
-gastro_out <- run_logit_cluster(gastro ~ minority, matched, matched$subclass)
+gastro_out <- run_logit_cluster(gastro ~ pupils, matched, matched$subclass)
 gastro_out              
 
 
 mort_out <- run_logit_cluster(
-  mort_inhospital ~ minority,
+  mort_inhospital ~ pupils,
   matched_mort,
   matched_mort$subclass
 )
 mort_out
 
 ltc_out <- run_logit_cluster(
-  ltc_inhospital ~ minority,
+  ltc_inhospital ~ pupils,
   matched_ltc,
   matched_ltc$subclass
 )
 ltc_out
 
 wlt_out <- run_logit_cluster(
-  withdrawallst_bin ~ minority,
+  withdrawallst_bin ~ pupils,
   matched_wlt,
   matched_wlt$subclass
 )
@@ -910,9 +908,9 @@ wlt_out
 
 
 # Linear regression with clustered SE
-los_out <- lm_robust(finaldischargedays ~ minority, data = matched, clusters = subclass)
-icu_out <- lm_robust(totaliculos ~ minority, data = matched, clusters = subclass)
-vent_out <- lm_robust(totalventdays ~ minority, data = matched, clusters = subclass)
+los_out <- lm_robust(finaldischargedays ~ pupils, data = matched, clusters = subclass)
+icu_out <- lm_robust(totaliculos ~ pupils, data = matched, clusters = subclass)
+vent_out <- lm_robust(totalventdays ~ pupils, data = matched, clusters = subclass)
 
 los_out
 icu_out
@@ -921,7 +919,7 @@ vent_out
 # Cerebral monitoring days
 matched_monitor <- matched %>% filter(!is.na(tbicerebralmonitordays))
 monitor_days_out <- lm_robust(
-  tbicerebralmonitordays ~ minority,
+  tbicerebralmonitordays ~ pupils,
   data = matched_monitor,
   clusters = subclass
 )
@@ -943,7 +941,7 @@ fmt_ci <- function(lo, hi, digits = 2) {
 }
 
 # Risk ratios: input is coeftest matrix from run_rr_cluster()
-summ_rr <- function(coeftest_mat, outcome, n_used, term = "minority") {
+summ_rr <- function(coeftest_mat, outcome, n_used, term = "pupils") {
   # coeftest_mat rows are (Intercept), minority, etc.
   if (!(term %in% rownames(coeftest_mat))) {
     return(tibble(
@@ -973,7 +971,7 @@ summ_rr <- function(coeftest_mat, outcome, n_used, term = "minority") {
 
 
 # Logistic: input is coeftest matrix from run_logit_cluster()
-summ_logit <- function(coeftest_mat, outcome, n_used, term = "minority") {
+summ_logit <- function(coeftest_mat, outcome, n_used, term = "pupils") {
   # coeftest_mat rows are (Intercept), minority, etc.
   if (!(term %in% rownames(coeftest_mat))) {
     return(tibble(
@@ -1002,7 +1000,7 @@ summ_logit <- function(coeftest_mat, outcome, n_used, term = "minority") {
 }
 
 # Linear: input is lm_robust object
-summ_lm <- function(lmrob, outcome, n_used, term = "minority") {
+summ_lm <- function(lmrob, outcome, n_used, term = "pupils") {
   s <- summary(lmrob)
   ct <- s$coefficients
   if (!(term %in% rownames(ct))) {
@@ -1032,7 +1030,7 @@ summ_lm <- function(lmrob, outcome, n_used, term = "minority") {
 # If your coefficient rowname isn't exactly "minority", change term= below accordingly.
 
 # term_name <- "minority"
-term_name <- "minorityMinority"   # <- uncomment if needed
+term_name <- "minorityMinority"   # <- uncomment if needed #QUONK would have to see what term would be; no additional edits yet after here
 
 results_table <- bind_rows(
   summ_logit(parench_out, "ICP parenchymal monitor", nrow(matched), term = term_name),
