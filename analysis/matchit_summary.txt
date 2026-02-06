@@ -1,0 +1,124 @@
+
+Call:
+matchit(formula = ps_formula, data = data_ps, method = "nearest", 
+    exact = ~gcs_cat, caliper = 0.2, ratio = 1)
+
+Summary of Balance for All Data:
+                                  Means Treated Means Control Std. Mean Diff.
+distance                                 0.2724        0.1802          0.7517
+ageyears                                11.5286       11.0501          0.0868
+sexMale                                  0.7143        0.7158         -0.0034
+sexFemale                                0.2857        0.2842          0.0034
+iss                                     25.5048       21.3868          0.5652
+tbimidlineshiftYes                       0.5310        0.3084          0.4460
+tbimidlineshiftNo                        0.4690        0.6916         -0.4460
+ich_category>=2 concomitant ICHs         0.7333        0.6374          0.2170
+ich_categoryisolated EDH                 0.0167        0.1274         -0.8647
+ich_categoryisolated IPH                 0.0619        0.0755         -0.0563
+ich_categoryisolated SAH                 0.0286        0.0348         -0.0373
+ich_categoryisolated SDH                 0.1405        0.0991          0.1192
+ich_categoryother/unspecified ICH        0.0190        0.0259         -0.0504
+teachingstatus0                          0.3095        0.2812          0.0612
+teachingstatus1                          0.6905        0.7188         -0.0612
+verificationlevel1                       0.8095        0.8467         -0.0947
+verificationlevel2                       0.1881        0.1509          0.0951
+verificationlevel3                       0.0024        0.0024          0.0005
+statedesignation1                        0.8000        0.8443         -0.1108
+statedesignation2                        0.1929        0.1498          0.1092
+statedesignation3                        0.0071        0.0059          0.0148
+minorityWhite                            0.5857        0.6439         -0.1181
+minorityMinority                         0.4143        0.3561          0.1181
+gcs_catMild                              0.0048        0.3703         -5.3096
+gcs_catModerate                          0.0333        0.1085         -0.4187
+gcs_catSevere                            0.9619        0.5212          2.3021
+                                  Var. Ratio eCDF Mean eCDF Max
+distance                              1.1177    0.2147   0.3282
+ageyears                              1.0223    0.0287   0.0647
+sexMale                                    .    0.0015   0.0015
+sexFemale                                  .    0.0015   0.0015
+iss                                   0.9515    0.1124   0.2541
+tbimidlineshiftYes                         .    0.2226   0.2226
+tbimidlineshiftNo                          .    0.2226   0.2226
+ich_category>=2 concomitant ICHs           .    0.0960   0.0960
+ich_categoryisolated EDH                   .    0.1107   0.1107
+ich_categoryisolated IPH                   .    0.0136   0.0136
+ich_categoryisolated SAH                   .    0.0062   0.0062
+ich_categoryisolated SDH                   .    0.0414   0.0414
+ich_categoryother/unspecified ICH          .    0.0069   0.0069
+teachingstatus0                            .    0.0283   0.0283
+teachingstatus1                            .    0.0283   0.0283
+verificationlevel1                         .    0.0372   0.0372
+verificationlevel2                         .    0.0372   0.0372
+verificationlevel3                         .    0.0000   0.0000
+statedesignation1                          .    0.0443   0.0443
+statedesignation2                          .    0.0431   0.0431
+statedesignation3                          .    0.0012   0.0012
+minorityWhite                              .    0.0582   0.0582
+minorityMinority                           .    0.0582   0.0582
+gcs_catMild                                .    0.3655   0.3655
+gcs_catModerate                            .    0.0752   0.0752
+gcs_catSevere                              .    0.4407   0.4407
+
+Summary of Balance for Matched Data:
+                                  Means Treated Means Control Std. Mean Diff.
+distance                                 0.2692        0.2682          0.0075
+ageyears                                11.5407       11.8230         -0.0512
+sexMale                                  0.7153        0.7321         -0.0371
+sexFemale                                0.2847        0.2679          0.0371
+iss                                     25.2679       25.2799         -0.0016
+tbimidlineshiftYes                       0.5287        0.5239          0.0096
+tbimidlineshiftNo                        0.4713        0.4761         -0.0096
+ich_category>=2 concomitant ICHs         0.7344        0.7488         -0.0325
+ich_categoryisolated EDH                 0.0167        0.0096          0.0561
+ich_categoryisolated IPH                 0.0622        0.0670         -0.0199
+ich_categoryisolated SAH                 0.0287        0.0335         -0.0287
+ich_categoryisolated SDH                 0.1411        0.1292          0.0344
+ich_categoryother/unspecified ICH        0.0167        0.0120          0.0350
+teachingstatus0                          0.3110        0.2751          0.0776
+teachingstatus1                          0.6890        0.7249         -0.0776
+verificationlevel1                       0.8110        0.8325         -0.0548
+verificationlevel2                       0.1866        0.1651          0.0551
+verificationlevel3                       0.0024        0.0024          0.0000
+statedesignation1                        0.8014        0.8397         -0.0957
+statedesignation2                        0.1914        0.1579          0.0849
+statedesignation3                        0.0072        0.0024          0.0568
+minorityWhite                            0.5861        0.6029         -0.0340
+minorityMinority                         0.4139        0.3971          0.0340
+gcs_catMild                              0.0048        0.0048          0.0000
+gcs_catModerate                          0.0335        0.0335          0.0000
+gcs_catSevere                            0.9617        0.9617          0.0000
+                                  Var. Ratio eCDF Mean eCDF Max Std. Pair Dist.
+distance                              1.0175    0.0017   0.0239          0.0102
+ageyears                              0.9456    0.0270   0.0526          0.9289
+sexMale                                    .    0.0167   0.0167          0.7891
+sexFemale                                  .    0.0167   0.0167          0.7891
+iss                                   0.8827    0.0130   0.0383          0.4324
+tbimidlineshiftYes                         .    0.0048   0.0048          0.3835
+tbimidlineshiftNo                          .    0.0048   0.0048          0.3835
+ich_category>=2 concomitant ICHs           .    0.0144   0.0144          0.8548
+ich_categoryisolated EDH                   .    0.0072   0.0072          0.0561
+ich_categoryisolated IPH                   .    0.0048   0.0048          0.4964
+ich_categoryisolated SAH                   .    0.0048   0.0048          0.3734
+ich_categoryisolated SDH                   .    0.0120   0.0120          0.6403
+ich_categoryother/unspecified ICH          .    0.0048   0.0048          0.2100
+teachingstatus0                            .    0.0359   0.0359          0.7297
+teachingstatus1                            .    0.0359   0.0359          0.7297
+verificationlevel1                         .    0.0215   0.0215          0.6153
+verificationlevel2                         .    0.0215   0.0215          0.6061
+verificationlevel3                         .    0.0000   0.0000          0.0048
+statedesignation1                          .    0.0383   0.0383          0.5861
+statedesignation2                          .    0.0335   0.0335          0.5821
+statedesignation3                          .    0.0048   0.0048          0.1136
+minorityWhite                              .    0.0167   0.0167          0.7819
+minorityMinority                           .    0.0167   0.0167          0.7819
+gcs_catMild                                .    0.0000   0.0000          0.0000
+gcs_catModerate                            .    0.0000   0.0000          0.0000
+gcs_catSevere                              .    0.0000   0.0000          0.0000
+
+Sample Sizes:
+          Control Treated
+All          1696     420
+Matched       418     418
+Unmatched    1278       2
+Discarded       0       0
+

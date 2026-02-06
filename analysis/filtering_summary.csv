@@ -1,0 +1,9 @@
+step,n
+Raw,5698
+Filtered (removed missing/bad values),2116
+(White),497
+(Minority),339
+(Male),605
+(Female),231
+Present pupillary reflexes,418
+Absent bilateral pupillary response,418

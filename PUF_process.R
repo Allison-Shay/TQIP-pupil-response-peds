@@ -3,9 +3,43 @@ library(tidyverse)
 library(dplyr)
 library(readr)
 
+### The directory structure of the data ###
 
+make_path <- function(x, y) {
+  sprintf("./TQIP 2007-2023/PUF AY %s/CSV/%s", x, y)
+}
+
+### Year to analyze ###
+
+args <- commandArgs(trailingOnly = TRUE)
+year <- args[1] # e.g. 2023
+
+### The output path ###
+
+output_path <- "final_data"
+
+### Filtering criteria ###
+
+# This will store number of encounters (note: not patients, because TQIP only stores encounter IDs) at each filtering step
+filter_log <- data.frame(
+  step = character(),
+  n = integer(),
+  stringsAsFactors = FALSE
+)
+log_step <- function(df, name, log_df) {
+  rbind(
+    log_df,
+    data.frame(step = name, n = nrow(df), stringsAsFactors = FALSE)
+  )
+}
+
+# Age
+agecutoff <- 18
+# List of trach ICD codes
 trach_codes <- c("0B110F4", "0B110Z4", "0B113F4", "0B113Z4", "0B114F4", "0B114Z4")
+# list of gastrostomy codes
 gastro_codes <- c("0DH60UZ", "0DH63UZ", "0DH64UZ", "0DH68UZ")
+# list of craniotomy codes
 crani_codes <- c("0N500ZZ","0N503ZZ","0N504ZZ","0N510ZZ","0N513ZZ","0N514ZZ","0N520ZZ","0N523ZZ","0N524ZZ","0N530ZZ","0N533ZZ","0N534ZZ","0N540ZZ","0N543ZZ","0N544ZZ","0N550ZZ","0N553ZZ","0N554ZZ","0N560ZZ","0N563ZZ","0N564ZZ","0N570ZZ","0N573ZZ","0N574ZZ","0N580ZZ","0N583ZZ","0N584ZZ",
                  "009430Z", "00943ZZ", "009440Z", "0N9000Z", "0N900ZZ", "0N9040Z", "0N904ZZ",
                  "0WJ10ZZ", "00J00ZZ", "0N800ZZ", "0N803ZZ", "0N804ZZ", "0NC10ZZ", "0NC13ZZ",
@@ -38,38 +72,10 @@ crani_codes <- c("0N500ZZ","0N503ZZ","0N504ZZ","0N510ZZ","0N513ZZ","0N514ZZ","0N
                  "0WP103Z", "0WP133Z", "0WP143Z", "0WP1X3Z", "00H033Z", "009600Z", "009630Z",
                  "009640Z")
 
-# Age
-agecutoff <- 18
 
+### Load data files ###
 
-### The directory structure of the data ###
-
-make_path <- function(x, y) {
-  sprintf("/Users/hunter/Downloads/Carilion/TQIP 2007-2023/PUF AY %s/CSV/%s", x, y)
-}
-### Year to analyze ###
-args <- commandArgs(trailingOnly = TRUE)
-year <- 2018# e.g. 2023
-
-### The output path ###
-
-output_path <- "final_data"
-
-### Filtering criteria ###
-
-# This will store number of encounters (note: not patients, because TQIP only stores encounter IDs) at each filtering step
-filter_log <- data.frame(
-  step = character(),
-  n = integer(),
-  stringsAsFactors = FALSE
-)
-log_step <- function(df, name, log_df) {
-  rbind(
-    log_df,
-    data.frame(step = name, n = nrow(df), stringsAsFactors = FALSE)
-  )
-}
-
+# Don't load columns that end in _biu (these columns just tell you whether something is "Not applicable" vs. "Not known/recorded"
 cols <- names(read.csv(make_path(year, "PUF_TRAUMA.csv"), nrows = 1))
 drop <- grepl("_biu$", cols, ignore.case = TRUE)
 colClasses <- ifelse(drop, "NULL", NA)
@@ -90,7 +96,7 @@ filter_log <- log_step(df, "Initial cohort", filter_log)
 ### Filter the loaded data ###
 
 df <- df %>% filter(ageyears < agecutoff)
-filter_log <- log_step(df, "Age < 18", filter_log)
+filter_log <- log_step(df, "Age ≥ 18", filter_log)
 
 # crani code pts only
 df_icdproc_crani <- df_icdproc %>%
@@ -100,6 +106,7 @@ crani_inc_keys <- df_icdproc_crani %>%
   unique()
 
 # crani_inc_keys are the inclusion keys
+
 df_crani <- df %>%
   filter(inc_key %in% crani_inc_keys)
 filter_log <- log_step(df_crani, "Craniotomy ICD-10-PCS code", filter_log)
@@ -141,6 +148,7 @@ df_crani <- df_crani %>%
     icd_diagnoses = paste(icddiagnosiscode, collapse = "; ")
   ) %>%
   ungroup()
+
 
 ### Make relevant columns ###
 
@@ -197,7 +205,7 @@ single_idx <- race_count == 1   # Exactly one race
 df_crani$race[idx_minority[single_idx]] <- race_cols[max.col(race_mat[single_idx, ], ties.method = "first")]
 df_crani$race[idx_minority[race_count > 1]] <- "multiple"   # Multiple races
 
-#Make pupillometry column binary #QUONK this is the only edit I would be concerned about in this file
+#Make pupillometry column binary
 df_crani$pupils <- NA_character_
 df_crani$pupils[df_crani$tbipupillaryresponse == 3] <-"ABPR"
 df_crani$pupils[df_crani$tbipupillaryresponse<3]<-"PPR"
@@ -222,7 +230,7 @@ if ("proceduredays" %in% names(df_crani) && !"hospitalprocedurestartdays" %in% n
 
 # ---- Optional ICD lookup export ----
 if (length(args) >= 2 && args[2] == "ICD") {
-  
+
   # Read lookup tables (skip header, keep first 2 columns only)
   proc_lookup <- read.csv(
     make_path(year, "PUF_ICDPROCEDURE_LOOKUP.csv"),
@@ -230,36 +238,36 @@ if (length(args) >= 2 && args[2] == "ICD") {
     header = FALSE,
     stringsAsFactors = FALSE
   )[, 1:2]
-  
+
   diag_lookup <- read.csv(
     make_path(year, "PUF_ICDDIAGNOSIS_LOOKUP.csv"),
     skip = 1,
     header = FALSE,
     stringsAsFactors = FALSE
   )[, 1:2]
-  
+
   colnames(proc_lookup) <- colnames(diag_lookup) <- c("code", "description")
-  
+
   proc_lookup$code <- trimws(proc_lookup$code)
   diag_lookup$code <- trimws(diag_lookup$code)
-  
+
   # ---- Procedure sections ----
   crani_rows  <- proc_lookup[proc_lookup$code %in% crani_codes, ]
   gastro_rows <- proc_lookup[proc_lookup$code %in% gastro_codes, ]
   trach_rows  <- proc_lookup[proc_lookup$code %in% trach_codes, ]
-  
+
   # ---- ICH diagnosis sections (ACTUAL ICD CODES) ----
   ich_edh <- diag_lookup[str_detect(diag_lookup$code, "^S06\\.4"), ]
   ich_sdh <- diag_lookup[str_detect(diag_lookup$code, "^S06\\.5"), ]
   ich_sah <- diag_lookup[str_detect(diag_lookup$code, "^S06\\.6"), ]
   ich_iph <- diag_lookup[str_detect(diag_lookup$code, "^S06\\.3"), ]
   ich_other <- diag_lookup[str_detect(diag_lookup$code, "^S06\\.89|^S06\\.9"), ]
-  
+
   out_file <- paste(output_path, "/", "ICD_codes.csv", sep = "")
   if (!dir.exists(output_path)) dir.create(output_path, recursive = TRUE)
-  
+
   con <- file(out_file, open = "wt")
-  
+
   write_section <- function(title, df) {
     writeLines(title, con)
     writeLines("code,description", con)
@@ -269,19 +277,19 @@ if (length(args) >= 2 && args[2] == "ICD") {
     }
     writeLines("", con)
   }
-  
+
   write_section("Cranial procedure codes", crani_rows)
   write_section("Gastrostomy procedure codes", gastro_rows)
   write_section("Tracheostomy procedure codes", trach_rows)
-  
+
   write_section("ICH type: epidural hematoma", ich_edh)
   write_section("ICH type: subdural hematoma", ich_sdh)
   write_section("ICH type: subarachnoid hemorrhage", ich_sah)
   write_section("ICH type: intraparenchymal hemorrhage", ich_iph)
   write_section("ICH type: other", ich_other)
-  
+
   close(con)
-  
+
   message("Wrote ICD codes to: ", out_file)
 }
 
@@ -297,8 +305,6 @@ df_crani <- df_crani %>%
     minority,
     race,
     ethnicity,
-    tbipupillaryresponse,
-    pupils,
     primarymethodpayment,
     verificationlevel,
     teachingstatus,
@@ -323,7 +329,9 @@ df_crani <- df_crani %>%
     tbimidlineshift,
     hospitalprocedurestartdays,
     interfacilitytransfer,
-    eddischargedisposition
+    eddischargedisposition,
+    pupils,
+    tbipupillaryresponse
   )
 
 
@@ -352,7 +360,7 @@ ais_head <- df_head %>%
   group_by(inc_key) %>%
   summarise(
     ais_head = if (all(is.na(aisseverity))) NA_real_
-    else max(aisseverity, na.rm = TRUE),
+               else max(aisseverity, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -360,7 +368,7 @@ ais_nonhead <- df_nonhead %>%
   group_by(inc_key) %>%
   summarise(
     ais_nonhead = if (all(is.na(aisseverity))) NA_real_
-    else max(aisseverity, na.rm = TRUE),
+               else max(aisseverity, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -389,7 +397,7 @@ if ("teachingstatus" %in% names(isolated_tbi)) {
     as.character() |>
     tolower() |>
     trimws()
-  
+
   isolated_tbi$teachingstatus <- dplyr::case_when(
     ts %in% c("academic", "university") ~ 1L,
     ts %in% c("community", "nonteaching") ~ 0L,
@@ -410,104 +418,6 @@ if (!dir.exists(output_path)) {
 write_csv(isolated_tbi, paste(output_path, "/", year, "cleaned.csv", sep=""))
 write_csv(filter_log, paste(output_path, "/", year, "filtering_summary.csv", sep=""))
 
-######## part 2
-#!/usr/bin/env Rscript
 
-suppressPackageStartupMessages({
-  library(readr)
-  library(dplyr)
-})
 
-input_dir <- "final_data"
-output_dir <- "final_data_merged"
 
-if (!dir.exists(output_dir)) {
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-}
-
-# -----------------------------
-# Merge filtering_summary.csv files (sum by step)
-# -----------------------------
-summary_files <- list.files(
-  input_dir,
-  pattern = "filtering_summary\\.csv$",
-  full.names = TRUE
-)
-
-if (length(summary_files) == 0) {
-  message("No *filtering_summary.csv files found in ", input_dir)
-} else {
-  summaries <- lapply(summary_files, function(f) {
-    read_csv(f, show_col_types = FALSE)
-  })
-  
-  step_order <- summaries[[1]]$step
-  
-  summary_all <- bind_rows(summaries)
-  
-  if (!("step" %in% names(summary_all))) {
-    stop("Merged filtering summaries do not contain a 'step' column.")
-  }
-  
-  numeric_cols <- names(summary_all)[vapply(summary_all, is.numeric, logical(1))]
-  numeric_cols <- setdiff(numeric_cols, "step")
-  
-  if (length(numeric_cols) == 0) {
-    stop("No numeric columns found to sum in filtering summaries (expected e.g. 'n').")
-  }
-  
-  summary_merged <- summary_all %>%
-    group_by(step) %>%
-    summarise(across(all_of(numeric_cols), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
-  
-  summary_merged <- summary_merged %>%
-    mutate(step = factor(step, levels = step_order)) %>%
-    arrange(step) %>%
-    mutate(step = as.character(step))
-  
-  out_summary <- file.path(output_dir, "filtering_summary.csv")
-  write_csv(summary_merged, out_summary)
-  message("Wrote merged filtering summary to: ", out_summary)
-}
-
-# -----------------------------
-# Merge cleaned.csv files (row-bind)
-# -----------------------------
-cleaned_files <- list.files(
-  input_dir,
-  pattern = "cleaned\\.csv$",
-  full.names = TRUE
-)
-
-if (length(cleaned_files) == 0) {
-  message("No *cleaned.csv files found in ", input_dir)
-} else {
-  # Read first file to define canonical column names and order
-  first_df <- read_csv(cleaned_files[1], show_col_types = FALSE)
-  canonical_names <- names(first_df)
-  
-  dfs <- vector("list", length(cleaned_files))
-  dfs[[1]] <- first_df
-  
-  if (length(cleaned_files) > 1) {
-    for (i in 2:length(cleaned_files)) {
-      df_i <- read_csv(cleaned_files[i], show_col_types = FALSE)
-      
-      if (!identical(names(df_i), canonical_names)) {
-        stop(
-          "Column names/order mismatch in file: ", cleaned_files[i], "\n",
-          "Expected: ", paste(canonical_names, collapse = ", "), "\n",
-          "Got:      ", paste(names(df_i), collapse = ", ")
-        )
-      }
-      
-      dfs[[i]] <- df_i
-    }
-  }
-  
-  cleaned_merged <- bind_rows(dfs)
-  
-  out_cleaned <- file.path(output_dir, "cleaned.csv")
-  write_csv(cleaned_merged, out_cleaned)
-  message("Wrote merged cleaned data to: ", out_cleaned)
-}

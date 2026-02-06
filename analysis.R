@@ -29,16 +29,17 @@ df <- raw_df
 ###### Create a data summary table #######
 
 transform_analysis_vars <- function(df) {
-  
-  # Safety check QUONK just added pupils and tbipupillary response
+
+  # Safety check
   required_cols <- c(
     "ageyears", "iss", "minority", "sex", "teachingstatus", "verificationlevel",
     "trach", "gastro", "icpparench", "icpevdrain",
     "withdrawallst", "tbimidlineshift", "ich_category",
-    "statedesignation", "hospdischargedisposition", "totalgcs","pupils", "tbipupillaryresponse",
-    "race", "ethnicity", "primarymethodpayment", "hospitaltype", "intent", "mechanism"
+    "statedesignation", "hospdischargedisposition", "totalgcs",
+    "race", "ethnicity", "primarymethodpayment", "hospitaltype", "intent", "mechanism",
+    "pupils", "tbipupillaryresponse"
   )
-  
+
   missing_cols <- setdiff(required_cols, names(df))
   if (length(missing_cols) > 0) {
     stop(
@@ -46,7 +47,7 @@ transform_analysis_vars <- function(df) {
       call. = FALSE
     )
   }
-  
+
   df %>%
     mutate(
       # Core demographics
@@ -55,18 +56,18 @@ transform_analysis_vars <- function(df) {
       sex = factor(sex, levels = c(1, 2),
                    labels = c("Male", "Female")),
       age_cat = case_when(
-        ageyears >= 18 & ageyears <= 30  ~ "Age 18-30 years",
-        ageyears > 30 & ageyears <= 45 ~ "Age 31-45 years",
-        ageyears > 45 & ageyears <= 60 ~ "Age 46-60 years",
-        ageyears > 60 & ageyears <= 75 ~ "Age 61-75 years",
-        ageyears > 75 ~ "Age >75 years",
+        ageyears >= 0 & ageyears <= 2  ~ "Age 0-2 years",
+        ageyears > 2 & ageyears <= 5 ~ "Age 3-5 years",
+        ageyears > 5 & ageyears <= 9 ~ "Age 6-9 years",
+        ageyears > 9 & ageyears <= 12 ~ "Age 10-12 years",
+        ageyears > 12 ~ "Age >12 years",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("Age 18-30 years", "Age 31-45 years", "Age 46-60 years", "Age 61-75 years", "Age >75 years")),
       race = factor(race, levels = c("white", "americanindian", "asian", "black", "pacificislander", "raceother", "multiple"),
-                    labels = c("White", "American Indian", "Asian", "Black", "Pacific Islander", "Other", "Multiple")), 
+                        labels = c("White", "American Indian", "Asian", "Black", "Pacific Islander", "Other", "Multiple")), 
       ethnicity = factor(ethnicity, levels = c(1, 2),
-                         labels = c("Hispanic/Latino", "Non-Hispanic/Latino")),
-      
+                   labels = c("Hispanic/Latino", "Non-Hispanic/Latino")),
+
       # Hospital characteristics
       teachingstatus = factor(teachingstatus),
       verificationlevel = factor(verificationlevel),
@@ -76,7 +77,7 @@ transform_analysis_vars <- function(df) {
         hospitaltype == 3  ~ "Government",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("For profit", "Non-profit", "Government")),
-      
+
       # Insurance
       primarymethodpayment = case_when(
         primarymethodpayment == 1  ~ "Medicaid",
@@ -88,18 +89,18 @@ transform_analysis_vars <- function(df) {
         primarymethodpayment == 10  ~ "Other",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("Medicaid", "Other", "Self-pay", "Private insurance", "Medicare")),
-      
+
       # Procedures
       trach  = factor(trach, levels = c(0, 1), labels = c("No", "Yes")),
       gastro = factor(gastro, levels = c(0, 1), labels = c("No", "Yes")),
       icpparench = factor(icpparench, levels = c(0, 1), labels = c("No", "Yes")),
       icpevdrain = factor(icpevdrain, levels = c(0, 1), labels = c("No", "Yes")),
-      
+
       # Outcomes / clinical decisions
       withdrawallst = factor(withdrawallst,
                              levels = c(1, 2),
                              labels = c("Yes", "No")),
-      
+
       # Injury mechanism
       intent = case_when(
         intent == 1  ~ "Unintentional",
@@ -124,11 +125,11 @@ transform_analysis_vars <- function(df) {
         mechanism >= 22  ~ "Other",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("Other", "Fall", "Firearm", "Machinery", "Motor vehicle traffic injury", "Nontraffic transportation injury", "Struck by/against")),
-      
+
       # Transfer
       interfacilitytransfer = factor(interfacilitytransfer,
-                                     levels = c(1, 2),
-                                     labels = c("Yes", "No")),
+                             levels = c(1, 2),
+                             labels = c("Yes", "No")),
       eddischargedisposition = case_when(
         eddischargedisposition == 11 ~ "ED transfer",
         eddischargedisposition != 11  ~ "Not ED transfer",
@@ -141,7 +142,7 @@ transform_analysis_vars <- function(df) {
         tbimidlineshift == 2 ~ "No",
         TRUE ~ NA_character_
       ) %>% factor(levels = c("Yes", "No")),
-      tbipupillaryresponse = case_when( #QUONK
+      tbipupillaryresponse = case_when(
         tbipupillaryresponse == 1 ~ "Both reactive",
         tbipupillaryresponse == 2 ~ "One reactive",
         tbipupillaryresponse == 3 ~ "Neither reactive",
@@ -182,7 +183,7 @@ for (col_name in names(df)) {
   x <- df[[col_name]]
   n_na <- sum(is.na(x))
   x_no_na <- x[!is.na(x)]
-  
+
   # Numerical
   if (is.numeric(x)) {
     type <- "numerical"
@@ -193,20 +194,20 @@ for (col_name in names(df)) {
         min(x_no_na), " to ", max(x_no_na)
       )
     }
-    
-    # Categorical
+
+  # Categorical
   } else {
     type <- "categorical"
     levels <- unique(x_no_na)
     n_levels <- length(levels)
-    
+
     if (n_levels <= max_levels_to_print) {
       value_summary <- paste(levels, collapse = ", ")
     } else {
       value_summary <- paste(n_levels, "categories")
     }
   }
-  
+
   summary_df <- rbind(
     summary_df,
     data.frame(
@@ -251,19 +252,19 @@ data <- raw_df
 
 apply_analytic_filters <- function(data_frame) {
   data_frame %>%
-    filter(!is.na(minority))%>%
-    filter(!is.na(pupils))%>% #QUONK
-    filter(!is.na(tbipupillaryresponse), tbipupillaryresponse %in% c(1,2,3)) %>% #QUONK
-    filter(!is.na(sex), sex %in% c(1,2))%>%
-    filter(!is.na(teachingstatus))%>%
-    filter(!is.na(verificationlevel))%>%
-    filter(!is.na(totalgcs))%>%
-    filter(!is.na(iss))%>%
-    filter(!is.na(tbimidlineshift), tbimidlineshift %in% c(1,2))%>%
-    filter(!is.na(statedesignation), statedesignation %in% c(1,2,3,4,6))%>% # 5 doesn't exist for statedesignation and 7 = "not applicable"
-    # filter(!is.na(hospdischargedisposition))%>%   # Don't exclude upfront (avoid selection bias)
-    # filter(!is.na(withdrawallst))%>%              # Don't exclude upfront
-    filter(!is.na(ich_category))
+  filter(!is.na(minority))%>%
+  filter(!is.na(pupils))%>%
+  filter(!is.na(tbipupillaryresponse), tbipupillaryresponse %in% c(1,2,3))%>%
+  filter(!is.na(sex), sex %in% c(1,2))%>%
+  filter(!is.na(teachingstatus))%>%
+  filter(!is.na(verificationlevel))%>%
+  filter(!is.na(totalgcs))%>%
+  filter(!is.na(iss))%>%
+  filter(!is.na(tbimidlineshift), tbimidlineshift %in% c(1,2))%>%
+  filter(!is.na(statedesignation), statedesignation %in% c(1,2,3,4,6))%>% # 5 doesn't exist for statedesignation and 7 = "not applicable"
+  # filter(!is.na(hospdischargedisposition))%>%   # Don't exclude upfront (avoid selection bias)
+  # filter(!is.na(withdrawallst))%>%              # Don't exclude upfront
+  filter(!is.na(ich_category))
 }
 
 data_analytic <- apply_analytic_filters(data)
@@ -273,7 +274,7 @@ filter_log <- log_step(data_analytic, "Filtered (removed missing/bad values)", f
 
 ######## Run statistical analysis to compare groups ########
 
-group_var <- "pupils" #QUONK
+group_var <- "pupils"
 
 exclude_vars <- character(0)
 
@@ -354,7 +355,7 @@ write.csv(table1_pvals, file.path(output_dir, "raw_data_statistics.csv"), row.na
 
 ######## Run more detailed statistical analyses ############
 
-group_var <- "pupils" #QUONK
+group_var <- "pupils"
 exclude_vars <- character(0)
 
 # ---- settings ----
@@ -399,17 +400,17 @@ header_rows <- tibble(
 summarise_continuous <- function(df, var, group, g1, g2) {
   x <- df[[var]]
   g <- df[[group]]
-  
+
   overall_nmiss <- sum(is.na(x) | is.na(g))
   # (missing for this row = missing x OR missing group assignment)
   # If you prefer only missing x, change to sum(is.na(x))
-  
+
   x_all <- x[!is.na(x) & !is.na(g)]
   x_g1 <- x[g == g1 & !is.na(x)]
   x_g2 <- x[g == g2 & !is.na(x)]
-  
+
   p <- test_numeric_wilcox(df, var, group)
-  
+
   tibble(
     variable = var,
     level = "",
@@ -444,9 +445,9 @@ collapse_levels <- function(x, max_levels, show_other) {
   x[is.na(x)] <- NA_character_
   tab <- sort(table(x, useNA = "no"), decreasing = TRUE)
   levs <- names(tab)
-  
+
   if (length(levs) <= max_levels) return(factor(x, levels = levs))
-  
+
   keep <- levs[seq_len(max_levels)]
   if (show_other) {
     x2 <- ifelse(x %in% keep, x, "Other")
@@ -460,29 +461,29 @@ collapse_levels <- function(x, max_levels, show_other) {
 summarise_categorical <- function(df, var, group, g1, g2, max_levels, show_other) {
   x_raw <- df[[var]]
   g <- df[[group]]
-  
+
   # Collapse to top levels for display (prevents gigantic tables)
   x <- collapse_levels(x_raw, max_levels, show_other)
-  
+
   p <- test_categorical_chisq(
     df %>% mutate(!!var := x),
     var,
     group
   )
-  
+
   # For n (%) by group, denominator is non-missing group within that group
   denom_g1 <- sum(g == g1, na.rm = TRUE)
   denom_g2 <- sum(g == g2, na.rm = TRUE)
-  
+
   # Overall denominator = all rows (or non-missing group) – choose what you prefer
   denom_all <- sum(!is.na(g))
-  
+
   levels_x <- levels(x)
   out <- map_dfr(levels_x, function(lv) {
     n_all <- sum(x == lv, na.rm = TRUE)
     n1 <- sum(x == lv & g == g1, na.rm = TRUE)
     n2 <- sum(x == lv & g == g2, na.rm = TRUE)
-    
+
     tibble(
       variable = var,
       level = lv,
@@ -495,7 +496,7 @@ summarise_categorical <- function(df, var, group, g1, g2, max_levels, show_other
       note = ""
     )
   })
-  
+
   # add a variable header row that carries the p-value + missingness
   header <- tibble(
     variable = var,
@@ -510,7 +511,7 @@ summarise_categorical <- function(df, var, group, g1, g2, max_levels, show_other
       paste0("shown top ", max_levels, if (show_other) " + Other" else "")
     } else ""
   )
-  
+
   bind_rows(header, out)
 }
 
@@ -546,7 +547,7 @@ data_analytic <- data_analytic %>%
     minority         = as.integer(minority),             # 1 = minority, 0 = NHW
     verificationlevel = factor(verificationlevel),
     teachingstatus   = factor(teachingstatus),
-    pupils = factor( #QUONK
+    pupils = factor(
       pupils,
       levels = c("PPR", "ABPR"),
       labels = c("At least one reactive", "Absent bilateral pupillary response")
@@ -570,22 +571,19 @@ data_analytic <- data_analytic %>%
       withdrawallst == 1 ~ 1L,
       TRUE ~ NA_integer_
     )
-  )
+)
 
 ######## Propensity matching ########
 
-#QUONK
+
 ps_formula <- pupils ~ ageyears + sex + iss +
   tbimidlineshift + ich_category +
   teachingstatus + verificationlevel +
   statedesignation + minority
 
-#QUONK
-#data_ps <- transform_analysis_vars(data_analytic)
-data_ps <- transform_analysis_vars(data_analytic)%>%
-  filter(!is.na(pupils)) %>%
-  droplevels()
     
+data_ps <- transform_analysis_vars(data_analytic)
+
 m.out <- matchit(
   ps_formula,
   data = data_ps,
@@ -604,7 +602,6 @@ covar_labels <- c(
   distance = "Propensity score",
   ageyears = "Age (years)",
   sex_Female = "Sex",
-  minority = "Minority status", #QUONK
   gcs_cat_Mild = "GCS: Mild (13–15)",
   gcs_cat_Moderate = "GCS: Moderate (9–12)",
   gcs_cat_Severe = "GCS: Severe (3-8)",
@@ -624,11 +621,12 @@ covar_labels <- c(
   statedesignation_2 = "State trauma designation level II",
   statedesignation_3 = "State trauma designation level III",
   statedesignation_4 = "State trauma designation level IV",
-  statedesignation_6 = "State trauma designation level—other"
+  statedesignation_6 = "State trauma designation level—other",
+  minority_Minority = "Minority status"
 )
 
 
-
+    
 out <- capture.output(summary(m.out))
 writeLines(out, file.path(output_dir, "matchit_summary.txt"))
 pdf(file.path(output_dir, "love_plot.pdf"), width = 7, height = 5)
@@ -682,7 +680,7 @@ matched_summary_df <- make_summary_df(matched, max_levels_to_print = 10)
 write.csv(matched_summary_df[order(matched_summary_df$type, decreasing=TRUE),],
           file.path(output_dir, "matched_data_summary.csv"), row.names=FALSE)
 
-group_var <- "pupils" #QUONK haven't started running from here; just changed minority to pupils from here until the last QUONK
+group_var <- "pupils"
 
 exclude_vars <- c(
   "distance", "weights", "subclass"  # MatchIt columns
@@ -806,15 +804,15 @@ cluster_se <- function(model, cluster) {
 
 run_rr_cluster <- function(formula, data, cluster) {
   mf <- model.frame(formula, data = data, na.action = na.omit)
-  
+
   cl <- cluster
   names(cl) <- rownames(data)
   cl_used <- unname(cl[rownames(mf)])
-  
+
   if (anyNA(cl_used)) {
     stop("Cluster ID could not be aligned for some model rows.", call. = FALSE)
   }
-  
+
   y <- model.response(mf)
   if (is.factor(y) || is.character(y) || is.logical(y)) {
     y <- trimws(as.character(y))
@@ -828,15 +826,15 @@ run_rr_cluster <- function(formula, data, cluster) {
   } else {
     mf[[1]] <- as.numeric(y)
   }
-  
+
   fit <- glm(formula, data = mf, family = poisson(link = "log"))
   clv <- cluster_se(fit, cl_used)
   lmtest::coeftest(fit, vcov = clv$vcov)
 }
 
 
-parench_out_rr <- run_rr_cluster(icpparench ~ minority, matched, matched$subclass)
-evd_out_rr     <- run_rr_cluster(icpevdrain ~ minority, matched, matched$subclass)
+parench_out_rr <- run_rr_cluster(icpparench ~ pupils, matched, matched$subclass)
+evd_out_rr     <- run_rr_cluster(icpevdrain ~ pupils, matched, matched$subclass)
 trach_out_rr   <- run_rr_cluster(trach ~ pupils, matched, matched$subclass)
 gastro_out_rr  <- run_rr_cluster(gastro ~ pupils, matched, matched$subclass)
 
@@ -873,7 +871,7 @@ run_logit_cluster <- function(formula, data, cluster) {
   return(coefs)
 }
 
-#crani_out <- run_logit_cluster(crani ~ minority, matched, matched$subclass)
+#crani_out <- run_logit_cluster(crani ~ pupils, matched, matched$subclass)
 #crani_out
 parench_out <- run_logit_cluster(icpparench ~ pupils, matched, matched$subclass)
 parench_out
@@ -942,23 +940,23 @@ fmt_ci <- function(lo, hi, digits = 2) {
 
 # Risk ratios: input is coeftest matrix from run_rr_cluster()
 summ_rr <- function(coeftest_mat, outcome, n_used, term = "pupils") {
-  # coeftest_mat rows are (Intercept), minority, etc.
+  # coeftest_mat rows are (Intercept), pupils, etc.
   if (!(term %in% rownames(coeftest_mat))) {
     return(tibble(
       outcome = outcome, model = "Risk", n = n_used,
       estimate = NA_character_, ci_95 = NA_character_, p_value = NA_character_
     ))
   }
-  
+
   b  <- coeftest_mat[term, "Estimate"]
   se <- coeftest_mat[term, "Std. Error"]
   p  <- coeftest_mat[term, "Pr(>|z|)"]
-  
+
   # OR + Wald CI on log-odds scale
   or  <- exp(b)
   lo  <- exp(b - 1.96 * se)
   hi  <- exp(b + 1.96 * se)
-  
+
   tibble(
     outcome = outcome,
     model = "Risk (RR)",
@@ -972,23 +970,23 @@ summ_rr <- function(coeftest_mat, outcome, n_used, term = "pupils") {
 
 # Logistic: input is coeftest matrix from run_logit_cluster()
 summ_logit <- function(coeftest_mat, outcome, n_used, term = "pupils") {
-  # coeftest_mat rows are (Intercept), minority, etc.
+  # coeftest_mat rows are (Intercept), pupils, etc.
   if (!(term %in% rownames(coeftest_mat))) {
     return(tibble(
       outcome = outcome, model = "Logistic", n = n_used,
       estimate = NA_character_, ci_95 = NA_character_, p_value = NA_character_
     ))
   }
-  
+
   b  <- coeftest_mat[term, "Estimate"]
   se <- coeftest_mat[term, "Std. Error"]
   p  <- coeftest_mat[term, "Pr(>|z|)"]
-  
+
   # OR + Wald CI on log-odds scale
   or  <- exp(b)
   lo  <- exp(b - 1.96 * se)
   hi  <- exp(b + 1.96 * se)
-  
+
   tibble(
     outcome = outcome,
     model = "Logistic (OR)",
@@ -1009,12 +1007,12 @@ summ_lm <- function(lmrob, outcome, n_used, term = "pupils") {
       estimate = NA_character_, ci_95 = NA_character_, p_value = NA_character_
     ))
   }
-  
+
   b  <- ct[term, "Estimate"]
   lo <- ct[term, "CI Lower"]
   hi <- ct[term, "CI Upper"]
   p  <- ct[term, "Pr(>|t|)"]
-  
+
   tibble(
     outcome = outcome,
     model = "Linear (Δ days)",
@@ -1026,55 +1024,55 @@ summ_lm <- function(lmrob, outcome, n_used, term = "pupils") {
 }
 
 # ---- build the paper table ----
-# NOTE: if minority is a factor, the term might be "minorityMinority"
-# If your coefficient rowname isn't exactly "minority", change term= below accordingly.
+# NOTE: if pupils is a factor, the term might be "pupilsPPR" (for pupillary reflexes present)
 
-# term_name <- "minority"
-term_name <- "minorityMinority"   # <- uncomment if needed #QUONK would have to see what term would be; no additional edits yet after here
-
+term_name <- "pupilsAbsent bilateral pupillary response"
+              
 results_table <- bind_rows(
   summ_logit(parench_out, "ICP parenchymal monitor", nrow(matched), term = term_name),
   summ_logit(evd_out,     "EVD placed",             nrow(matched), term = term_name),
   summ_logit(trach_out,   "Tracheostomy",           nrow(matched), term = term_name),
   summ_logit(gastro_out,  "Gastrostomy",            nrow(matched), term = term_name),
-  
+
   summ_logit(mort_out,    "In-hospital mortality",  nrow(matched_mort), term = term_name),
   summ_logit(ltc_out,     "Discharge to LTC",       nrow(matched_ltc),  term = term_name),
-  
+
   summ_logit(wlt_out,     "Withdrawal of LST",      nrow(matched_wlt),  term = term_name),
-  
+
   summ_rr(parench_out_rr, "ICP parenchymal monitor", nrow(matched), term = term_name),
   summ_rr(evd_out_rr,     "EVD placed",             nrow(matched), term = term_name),
   summ_rr(trach_out_rr,   "Tracheostomy",           nrow(matched), term = term_name),
   summ_rr(gastro_out_rr,  "Gastrostomy",            nrow(matched), term = term_name),
-  
+
   summ_rr(mort_out_rr,    "In-hospital mortality",  nrow(matched_mort), term = term_name),
   summ_rr(ltc_out_rr,     "Discharge to LTC",       nrow(matched_ltc),  term = term_name),
-  
+
   summ_rr(wlt_out_rr,     "Withdrawal of LST",      nrow(matched_wlt),  term = term_name),
-  
+
   summ_lm(los_out,        "Hospital LOS",           nrow(matched), term = term_name),
   summ_lm(icu_out,        "ICU LOS",                nrow(matched), term = term_name),
   summ_lm(vent_out,       "Ventilator days",        nrow(matched), term = term_name),
-  
+
   summ_lm(monitor_days_out, "Cerebral monitoring days", nrow(matched_monitor), term = term_name)
 ) %>%
   mutate(
-    contrast = "Minority vs White"
+    contrast = "Absent vs Present pupillary reflexes"
   ) %>%
   select(outcome, model, contrast, n, estimate, ci_95, p_value)
 
 
 write.csv(results_table, file.path(output_dir, "final_analysis.csv"), row.names = FALSE)
 
-filter_log <- log_step_n(nrow(matched[matched$minority != "Minority",]), "White", filter_log)
-filter_log <- log_step_n(nrow(matched[matched$minority == "Minority",]), "Minority", filter_log)
+filter_log <- log_step_n(nrow(matched[matched$minority != "Minority",]), "(White)", filter_log)
+filter_log <- log_step_n(nrow(matched[matched$minority == "Minority",]), "(Minority)", filter_log)
 filter_log <- log_step_n(nrow(matched[matched$sex == "Male",]), "(Male)", filter_log)
 filter_log <- log_step_n(nrow(matched[matched$sex == "Female",]), "(Female)", filter_log)
+filter_log <- log_step_n(nrow(matched[matched$pupils != "Absent bilateral pupillary response",]), "Present pupillary reflexes", filter_log)
+filter_log <- log_step_n(nrow(matched[matched$pupils == "Absent bilateral pupillary response",]), "Absent bilateral pupillary response", filter_log)
 write_csv(filter_log, paste(output_dir, "/", "filtering_summary.csv", sep=""))
 
 
-######### Output a table based on trach+peg vs. none in the matched minority cohort #############
+######### Output a table based on trach+peg vs. none in the matched pupil cohort #############
 
 matched2 <- matched %>%
   mutate(
@@ -1085,8 +1083,8 @@ matched2 <- matched %>%
     ) %>% factor(levels = c("None", "Trach or PEG"))
   )
 
-minor_only <- matched2 %>%
-  filter(minority == "Minority") %>%
+pupils_only <- matched2 %>%
+  filter(pupils != "Absent bilateral pupillary response") %>%
   filter(trach_peg %in% c("None", "Trach or PEG")) %>%
   droplevels()
 
@@ -1096,6 +1094,7 @@ vars_cat <- c(
   "gcs_cat",
   "age_cat",
   "sex",
+  "minority",
   "race",
   "ethnicity",
   "primarymethodpayment",
@@ -1112,11 +1111,11 @@ vars_cat <- c(
   "eddischargedisposition"     # if present (your derived ED transfer variable)
 )
 
-vars_cont <- vars_cont[vars_cont %in% names(minor_only)]
-vars_cat  <- vars_cat[vars_cat %in% names(minor_only)]
+vars_cont <- vars_cont[vars_cont %in% names(pupils_only)]
+vars_cat  <- vars_cat[vars_cat %in% names(pupils_only)]
 
 group_var2 <- "trach_peg"
-g_all <- minor_only[[group_var2]]
+g_all <- pupils_only[[group_var2]]
 g_levels <- sort(unique(na.omit(g_all)))
 if (length(g_levels) != 2) stop("Need exactly 2 levels for trach_peg after filtering.", call. = FALSE)
 g1 <- g_levels[1]  # None
@@ -1125,7 +1124,7 @@ g2 <- g_levels[2]  # Trach+PEG
 header_rows2 <- tibble::tibble(
   variable = c("N (encounters)", paste0("N: ", group_var2, " = ", g1), paste0("N: ", group_var2, " = ", g2)),
   level = "",
-  overall = c(as.character(nrow(minor_only)), "", ""),
+  overall = c(as.character(nrow(pupils_only)), "", ""),
   group1 = c("", as.character(sum(g_all == g1, na.rm = TRUE)), ""),
   group2 = c("", "", as.character(sum(g_all == g2, na.rm = TRUE))),
   p_value = "",
@@ -1134,18 +1133,18 @@ header_rows2 <- tibble::tibble(
   note = ""
 )
 
-cont_rows2 <- purrr::map_dfr(vars_cont, ~ summarise_continuous(minor_only, .x, group_var2, g1, g2))
-cat_rows2  <- purrr::map_dfr(vars_cat,  ~ summarise_categorical(minor_only, .x, group_var2, g1, g2, max_levels = 30, show_other = TRUE))
+cont_rows2 <- purrr::map_dfr(vars_cont, ~ summarise_continuous(pupils_only, .x, group_var2, g1, g2))
+cat_rows2  <- purrr::map_dfr(vars_cat,  ~ summarise_categorical(pupils_only, .x, group_var2, g1, g2, max_levels = 30, show_other = TRUE))
 
-table_minority_trachpeg <- dplyr::bind_rows(header_rows2, cont_rows2, cat_rows2) %>%
+table_pupils_trachpeg <- dplyr::bind_rows(header_rows2, cont_rows2, cat_rows2) %>%
   dplyr::rename(
     !!paste0(group_var2, "=", g1) := group1,
     !!paste0(group_var2, "=", g2) := group2
   )
 
-readr::write_csv(table_minority_trachpeg, file.path(output_dir, "table_minority_trachpeg_vs_none.csv"))
+readr::write_csv(table_pupils_trachpeg, file.path(output_dir, "table_presentpupils_trachpeg_vs_none.csv"))
 
-######### Output a table based on trach+peg vs. none in the matched non-minority cohort #############
+######### Output a table based on trach+peg vs. none in the matched absent pupils cohort #############
 
 matched2 <- matched %>%
   mutate(
@@ -1156,8 +1155,8 @@ matched2 <- matched %>%
     ) %>% factor(levels = c("None", "Trach or PEG"))
   )
 
-minor_only <- matched2 %>%
-  filter(minority != "Minority") %>%
+pupils_only <- matched2 %>%
+  filter(pupils == "Absent bilateral pupillary response") %>%
   filter(trach_peg %in% c("None", "Trach or PEG")) %>%
   droplevels()
 
@@ -1167,6 +1166,7 @@ vars_cat <- c(
   "gcs_cat",
   "age_cat",
   "sex",
+  "minority",
   "race",
   "ethnicity",
   "primarymethodpayment",
@@ -1183,11 +1183,11 @@ vars_cat <- c(
   "eddischargedisposition"     # if present (your derived ED transfer variable)
 )
 
-vars_cont <- vars_cont[vars_cont %in% names(minor_only)]
-vars_cat  <- vars_cat[vars_cat %in% names(minor_only)]
+vars_cont <- vars_cont[vars_cont %in% names(pupils_only)]
+vars_cat  <- vars_cat[vars_cat %in% names(pupils_only)]
 
 group_var2 <- "trach_peg"
-g_all <- minor_only[[group_var2]]
+g_all <- pupils_only[[group_var2]]
 g_levels <- sort(unique(na.omit(g_all)))
 if (length(g_levels) != 2) stop("Need exactly 2 levels for trach_peg after filtering.", call. = FALSE)
 g1 <- g_levels[1]  # None
@@ -1196,7 +1196,7 @@ g2 <- g_levels[2]  # Trach+PEG
 header_rows2 <- tibble::tibble(
   variable = c("N (encounters)", paste0("N: ", group_var2, " = ", g1), paste0("N: ", group_var2, " = ", g2)),
   level = "",
-  overall = c(as.character(nrow(minor_only)), "", ""),
+  overall = c(as.character(nrow(pupils_only)), "", ""),
   group1 = c("", as.character(sum(g_all == g1, na.rm = TRUE)), ""),
   group2 = c("", "", as.character(sum(g_all == g2, na.rm = TRUE))),
   p_value = "",
@@ -1205,17 +1205,18 @@ header_rows2 <- tibble::tibble(
   note = ""
 )
 
-cont_rows2 <- purrr::map_dfr(vars_cont, ~ summarise_continuous(minor_only, .x, group_var2, g1, g2))
-cat_rows2  <- purrr::map_dfr(vars_cat,  ~ summarise_categorical(minor_only, .x, group_var2, g1, g2, max_levels = 30, show_other = TRUE))
+cont_rows2 <- purrr::map_dfr(vars_cont, ~ summarise_continuous(pupils_only, .x, group_var2, g1, g2))
+cat_rows2  <- purrr::map_dfr(vars_cat,  ~ summarise_categorical(pupils_only, .x, group_var2, g1, g2, max_levels = 30, show_other = TRUE))
 
-table_minority_trachpeg <- dplyr::bind_rows(header_rows2, cont_rows2, cat_rows2) %>%
+table_pupils_trachpeg <- dplyr::bind_rows(header_rows2, cont_rows2, cat_rows2) %>%
   dplyr::rename(
     !!paste0(group_var2, "=", g1) := group1,
     !!paste0(group_var2, "=", g2) := group2
   )
 
-readr::write_csv(table_minority_trachpeg, file.path(output_dir, "table_nonminority_trachpeg_vs_none.csv"))
-
-
-
-
+readr::write_csv(table_pupils_trachpeg, file.path(output_dir, "table_absentpupils_trachpeg_vs_none.csv"))
+              
+              
+              
+              
+              
