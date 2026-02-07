@@ -29,7 +29,7 @@ raw_df <- read.csv(fname)
 
 raw_df$pupils <- NA_character_
 raw_df$pupils[raw_df$tbipupillaryresponse == 3] <-"ABPR"
-raw_df$pupils[raw_df$tbipupillaryresponse == 1] <- "PPR"
+raw_df$pupils[raw_df$tbipupillaryresponse < 3] <- "PPR"
 df <- raw_df
 
 ###### Create a data summary table #######
