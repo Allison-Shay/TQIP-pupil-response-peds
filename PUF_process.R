@@ -208,7 +208,8 @@ df_crani$race[idx_minority[race_count > 1]] <- "multiple"   # Multiple races
 #Make pupillometry column binary
 df_crani$pupils <- NA_character_
 df_crani$pupils[df_crani$tbipupillaryresponse == 3] <-"ABPR"
-df_crani$pupils[df_crani$tbipupillaryresponse<3]<-"PPR"
+df_crani$pupils[df_crani$tbipupillaryresponse == 2] <-"UPR"
+df_crani$pupils[df_crani$tbipupillaryresponse == 1] <- "PPR"
 
 ### Finalize our column names (renaming columns if necessary since different years have different column names) ###
 
