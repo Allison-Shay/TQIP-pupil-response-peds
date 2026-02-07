@@ -24,6 +24,12 @@ if (!dir.exists(output_dir)) {
 ###### Read in the data ######
 
 raw_df <- read.csv(fname)
+
+###### Establish pupillary response variables #######
+
+raw_df$pupils <- NA_character_
+raw_df$pupils[raw_df$tbipupillaryresponse == 3] <-"ABPR"
+raw_df$pupils[raw_df$tbipupillaryresponse == 1] <- "PPR"
 df <- raw_df
 
 ###### Create a data summary table #######
