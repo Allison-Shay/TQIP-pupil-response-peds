@@ -1,5 +1,9 @@
 # Pupillary response
 
+## Data Availability
+
+The data used for this study are available from TQIP and were used under license for the current study, and therefore are not publicly available. The data is available upon request and permission of TQIP: https://www.facs.org/quality-programs/trauma/quality/national-trauma-data-bank/datasets/ or through institutional access in participating institutions.
+
 ## 1. Setup
 
 This was performed using **R version 4.1.3** or **R version 4.5.2 (2025-10-31)** and the following R packages:
